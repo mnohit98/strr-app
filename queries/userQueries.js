@@ -21,3 +21,7 @@ exports.addMemberToClub = `
     VALUES (?, ?);
 `;
 
+exports.getMemberById = `
+    SELECT * FROM Member
+    WHERE id = ?
+`;

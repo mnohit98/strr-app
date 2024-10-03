@@ -87,3 +87,7 @@ exports.getClubsByLocation = async (locationId) => {
     throw new Error('Error fetching clubs information');
   }
 };
+
+exports.getActivityTags = async () => {
+    return await activityRepository.findActivityTags();
+};

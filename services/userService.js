@@ -4,3 +4,6 @@ exports.getClubsByMemberId = async (memberId) => {
     return await userRepository.findClubById(memberId);
 };
 
+exports.getMemberDetails = async (memberId) => {
+    return await userRepository.findMemberById(memberId);
+};

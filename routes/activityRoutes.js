@@ -227,4 +227,28 @@ router.get('/:clubId/info', activityController.getClubInfo);
  */
 router.get('/:locationId/clubs', activityController.getClubsByLocation);
 
+/**
+ * @swagger
+ * /api/activity/tags:
+ *   get:
+ *     tags: [Activity]
+ *     summary: Get activity tags
+ *     description: Retrieve detailed information for clubs, including activity type, activity group, and club reputation by location ID.
+ *     parameters:
+ *
+ *     responses:
+ *       200:
+ *         description: Activity tags
+ *         content:
+ *           application/json:
+ *             schema:
+ *       404:
+ *         description: Activity not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:locationId/clubs', activityController.getClubsByLocation);
+
+
+
 module.exports = router;
