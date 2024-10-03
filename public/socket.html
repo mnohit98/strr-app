@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Socket.IO Client</title>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+
+
+</head>
+<body>
+<h1>Socket.IO Client</h1>
+<input id="message" placeholder="Enter message" />
+<button id="sendMessage">Send Message</button>
+<button id="joinRoom1">Open Club Chat</button>
+<button id="leaveRoom1">Leave Club Chat</button>
+
+<div id="messages"></div>
+
+<script>
+    const socket = io();
+
+    // Listen for incoming chat messages
+    socket.on('receive-message', (msg) => {
+        const messagesDiv = document.getElementById('messages');
+        console.log("Message received " + msg);
+        messagesDiv.innerHTML += `<p>${msg.message.messageText}</p>`;
+    });
+
+    // Send message on button click
+    document.getElementById('sendMessage').onclick = () => {
+        const message = document.getElementById('message').value;
+        socket.emit('send-message', {memberId: "1", clubId: "1", messageText: message});
+        document.getElementById('message').value = ''; // Clear the input
+    };
+    document.getElementById('joinRoom1').onclick = () => {
+        socket.emit('open-club-chat', {clubId: "1"});
+    };
+    document.getElementById('leaveRoom1').onclick = () => {
+        socket.emit('close-club-chat', {clubId: "1"});
+    };
+
+</script>
+</body>
+</html>
