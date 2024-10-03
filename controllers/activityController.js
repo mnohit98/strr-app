@@ -1,25 +1,34 @@
 const activityService = require('../services/activityService.js');
 const { formatResponse, formatError } = require('../utils/responseFormatter');
 
-const path = require('path');
-console.log('Resolved path:', path.resolve(__dirname, '../utils/responseFormatter'));
-
-exports.getActivitiesByLocation = async (req, res) => {
+exports.getUpcomingMeetups = async (req, res) => {
     try {
-        const { locationId } = req.params;
-        const activities = await activityService.getActivitiesByLocation(locationId);
-        res.json(formatResponse(activities));
+        const { clubId } = req.params;
+        const meetups = await activityService.getUpcomingMeetups(clubId);
+        res.json(formatResponse(meetups));
     } catch (error) {
         res.status(500).json(formatError(error.message));
     }
 };
 
-exports.getActivityDetails = async (req, res) => {
+exports.getClubInfo = async (req, res) => {
+    const { clubId } = req.params;
     try {
-        const { activityId } = req.params;
-        const details = await activityService.getActivityDetails(activityId);
-        res.json(formatResponse(details));
+      const clubInfo = await activityService.getClubInfo(clubId);
+      res.status(200).json(clubInfo);
     } catch (error) {
-        res.status(500).json(formatError(error.message));
+      res.status(404).json({ message: error.message });
     }
+};
+
+// if locationId equal to zero get all clubs
+exports.getClubsByLocation = async (req, res) => {
+  const locationId = req.params.locationId;
+
+  try {
+    const clubs = await activityService.getClubsByLocation(locationId);
+    res.status(200).json(clubs); 
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };

@@ -1,13 +1,21 @@
 const locationRepository = require('../repositories/locationRepository');
 
-exports.getLocationByCoords = async (latitude, longitude) => {
-    return await locationRepository.findLocationByCoords(latitude, longitude);
-};
+exports.getAllLocations = async () => {
+    const locations = await locationRepository.findAllLocations();
 
-exports.addLocation = async (locationData) => {
-    return await locationRepository.insertLocation(locationData);
-};
+    // Add the default location with id=0
+    const defaultLocation = {
+        id: 0,
+        state: "ALL",
+        city: "ALL",
+        area: "ALL",
+        area_code: "",
+        latitude: 0.00,
+        longitude: 0.00
+    };
 
-exports.getActivityTagsByLocation = async (locationId) => {
-    return await locationRepository.findActivityTagsByLocation(locationId);
+    // Add the default location at the beginning of the array
+    locations.unshift(defaultLocation);
+
+    return locations;
 };
