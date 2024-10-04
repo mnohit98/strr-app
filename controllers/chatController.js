@@ -1,10 +1,6 @@
 const chatService = require('../services/chatService.js');
 const { formatResponse, formatError } = require('../utils/responseFormatter');
-
-const path = require('path');
 const {ChatHistoryRequest, SentChatMessage} = require("../models/chatModel");
-
-console.log('Resolved path:', path.resolve(__dirname, '../utils/responseFormatter'));
 
 exports.getChatHistoryForClub = async (req, res) => {
     try {

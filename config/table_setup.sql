@@ -1,3 +1,4 @@
+CREATE DATABASE IF NOT EXISTS strr_app;
 USE `strr_app`;
 
 -- Generate and run the DROP TABLE command for all tables in the database

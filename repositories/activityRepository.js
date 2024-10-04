@@ -123,9 +123,9 @@ exports.getActivityTagById = (activityTagId) => {
 exports.findActivityTags = () => {
   return new Promise((resolve, reject) => {
     const query = `SELECT * FROM ActivityTag`;
-    db.query(query, [tagId], (error, results) => {
+    db.query(query, (error, results) => {
       if (error) return reject(error);
-      resolve(results); // Return the list of members
+      resolve(results); 
     });
   });
 };
