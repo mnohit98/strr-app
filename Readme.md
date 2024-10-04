@@ -159,3 +159,20 @@ The following environment variables are used in the Docker setup:
 
 - `MYSQL_ROOT_PASSWORD`: The password for the MySQL root user (default: `strr@123`).
 - `MYSQL_DATABASE`: The name of the database to create (default: `strr_app`).
+
+## Rerun docker
+
+```bash
+docker ps -a
+docker stop $(docker ps -a)
+docker rm $(docker ps -a)
+docker volume rm strr-app_db_data
+docker-compose up -d
+docker-compose up --build
+```
+
+## Schema Script
+
+1. Open Workbench
+2. Server -> Data Export
+3. object Selection -> select Db -> Export to self contained file -> create in single dump and include create schema

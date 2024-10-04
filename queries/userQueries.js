@@ -2,12 +2,7 @@ exports.getClubsByMemberId = `
     SELECT
         Club.id AS club_id,
         Club.name AS club_name,
-        Club.reputation,
-        Club.meetup_places,
-        Club.meetup_timings,
-        Club.faqs,
-        Club.dp_url,
-        Club.activity_tag_id
+        Club.dp_url
     FROM
         Club
     JOIN
