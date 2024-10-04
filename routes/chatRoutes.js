@@ -50,6 +50,8 @@ const chatSocket = (server) => {
  *   post:
  *     tags: [Chat]
  *     summary: Send a chat message
+ *     security:
+ *       - BearerAuth: []
  *     description: Endpoint to send a chat message from a member to a club
  *     requestBody:
  *       required: true
@@ -114,6 +116,8 @@ router.post('/send-message', chatController.broadcastChatMessageToClub);
  *   post:
  *     tags: [Chat]
  *     summary: Get chat history
+ *     security:
+ *       - BearerAuth: []
  *     description: Fetches the chat history of a specific club before a given timestamp
  *     requestBody:
  *       required: true

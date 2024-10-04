@@ -9,6 +9,8 @@ const userController = require('../controllers/userController.js');
  *   get:
  *     tags: [Member]
  *     summary: Get clubs for a member
+ *     security:
+ *       - BearerAuth: []
  *     description: Retrieve a list of clubs that a member belongs to by their member ID.
  *     parameters:
  *       - in: path

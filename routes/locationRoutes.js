@@ -15,6 +15,8 @@ const locationController = require('../controllers/locationController.js');
  *   get:
   *     tags: [Location] 
  *     summary: Get All locations
+ *     security:
+ *       - BearerAuth: []
  *     description: Retrieve all location information.
  *     responses:
  *       200:

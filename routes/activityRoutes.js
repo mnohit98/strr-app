@@ -9,6 +9,8 @@ const activityController = require('../controllers/activityController.js');
  *     tags: [Meetup]
  *     summary: Get upcoming meetups by club ID
  *     description: Retrieve a list of upcoming meetups for a specific club by its ID.
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: clubId
@@ -76,6 +78,8 @@ router.get('/:clubId/upcoming-meetups', activityController.getUpcomingMeetups);
  *     tags: [Club]
  *     summary: Get club information by club ID
  *     description: Retrieve detailed club information, including admins, members, and reputation by the club ID.
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: clubId
@@ -152,6 +156,8 @@ router.get('/:clubId/info', activityController.getClubInfo);
  *     tags: [Club]
  *     summary: Get clubs by location ID
  *     description: Retrieve detailed information for clubs, including activity type, activity group, and club reputation by location ID.
+ *     security:
+ *       - BearerAuth: []
  *     parameters:
  *       - in: path
  *         name: locationId
@@ -232,7 +238,9 @@ router.get('/:locationId/clubs', activityController.getClubsByLocation);
  * /api/activity/tags:
  *   get:
  *     tags: [Club]
- *     summary: Get all activity tags 
+ *     summary: Get all activity tags
+ *     security:
+ *       - BearerAuth: []
  *     description: Retrieve tag info.
  *     responses:
  *       200:

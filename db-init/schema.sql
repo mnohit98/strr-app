@@ -315,6 +315,8 @@ CREATE TABLE `Member` (
   `name` varchar(100) NOT NULL,
   `email` varchar(100) DEFAULT NULL,
   `contact_number` varchar(15) DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `email_verified` tinyint(1) DEFAULT '0',
   `meta` json DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -326,7 +328,8 @@ CREATE TABLE `Member` (
 
 LOCK TABLES `Member` WRITE;
 /*!40000 ALTER TABLE `Member` DISABLE KEYS */;
-INSERT INTO `Member` VALUES (1,'Alice Johnson','alice@example.com','9876543220','{}'),(2,'Bob Lee','bob@example.com','9876543221','{}');
+INSERT INTO `Member` VALUES (1,'Alice Johnson','alice@example.com','9876543220','$2a$10$m3a41kQS0l9yskcODzaeKOEZkrfXnNUduy7TC/LKcr2gTszcGDQhi',1,'{}'),
+(2,'Bob Lee','bob@example.com','9876543221','$2a$10$m3a41kQS0l9yskcODzaeKOEZkrfXnNUduy7TC/LKcr2gTszcGDQhi',1,'{}');
 /*!40000 ALTER TABLE `Member` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

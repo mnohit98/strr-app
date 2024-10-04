@@ -5,12 +5,24 @@ const swaggerUi = require('swagger-ui-express');
 
 // Swagger definition
 const swaggerDefinition = {
-  openapi: '3.0.0', // Version of OpenAPI
+  openapi: '3.0.1', // Version of OpenAPI
   info: {
     title: 'STRR', // API name
     version: '1.0.0', // API version
     description: 'Mixing people', // Description
   },
+  components: {
+    securitySchemes: {
+      BearerAuth: {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      }
+    }
+  },
+  security: [{
+    BearerAuth: []
+  }],
   servers: [
     {
       url: 'http://localhost:3000', // Server URL
