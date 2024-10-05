@@ -176,3 +176,32 @@ docker-compose up --build
 1. Open Workbench
 2. Server -> Data Export
 3. object Selection -> select Db -> Export to self contained file -> create in single dump and include create schema
+
+## Production
+
+https://strr-app-production.up.railway.app/api-docs
+
+Create two service db and github repo
+set environment variables as follow :
+
+Service
+
+MYSQL_DATABASE="${{MySQL.MYSQL_DATABASE}}"
+MYSQL_PUBLIC_URL="${{MySQL.MYSQL_PUBLIC_URL}}"
+MYSQL_ROOT_PASSWORD="${{MySQL.MYSQL_ROOT_PASSWORD}}"
+MYSQL_HOST="${{MySQL.MYSQLHOST}}"
+MYSQL_PASSWORD="${{MySQL.MYSQLPASSWORD}}"
+MYSQL_PORT="${{MySQL.MYSQLPORT}}"
+MYSQL_USER="${{MySQL.MYSQLUSER}}"
+BASE_URL="https://strr-app-production.up.railway.app/"
+
+SQL
+
+MYSQLDATABASE="strr_app"
+MYSQL_PUBLIC_URL="mysql://${{MYSQLUSER}}:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_TCP_PROXY_DOMAIN}}:${{RAILWAY_TCP_PROXY_PORT}}/${{MYSQL_DATABASE}}"
+MYSQL_ROOT_PASSWORD="EQFrIdzsyQPwpWZTaRKSZTOcZSFsGroH"
+MYSQL_URL="mysql://${{MYSQLUSER}}:${{MYSQL_ROOT_PASSWORD}}@${{RAILWAY_PRIVATE_DOMAIN}}:3306/${{MYSQL_DATABASE}}"
+MYSQLHOST="${{RAILWAY_PRIVATE_DOMAIN}}"
+MYSQLPASSWORD="${{MYSQL_ROOT_PASSWORD}}"
+MYSQLPORT="3306"
+MYSQLUSER="root"
