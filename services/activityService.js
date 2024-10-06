@@ -40,13 +40,16 @@ exports.getClubInfo = async (clubId) => {
       new Date(member.joined_on) >= oneMonthAgo
     );
 
+    const activityTag = await activityRepository.getActivityTag(club.activity_tag_id);
+    activityTagName = activityTag ? activityTag[0].name : null;
+
     return {
       club,
+      activityTagName,
       admins,
       totalMembers,
       activeMembers: activeMembers.length,
-      activeMembersDetails: await activityRepository.getMemberDetails(activeMembers.map(m => m.member_id)),
-      activityTag: await activityRepository.getActivityTag(club.activity_tag_id),
+      activeMembersDetails: await activityRepository.getMemberDetails(activeMembers.map(m => m.member_id))
     };
   }
 
@@ -66,7 +69,7 @@ exports.getClubsByLocation = async (locationId) => {
           
           // Loop through each meetup info object to gather meetup_days
           meetupInfoArray.forEach(meetup => {
-            const days = JSON.parse(meetup.meetup_days);
+            const days = meetup.meetup_days;
             days.forEach(day => meetupDaysSet.add(day));
           });
         }
@@ -90,4 +93,5 @@ exports.getClubsByLocation = async (locationId) => {
 
 exports.getActivityTags = async () => {
     return await activityRepository.findActivityTags();
+
 };

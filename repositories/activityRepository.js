@@ -78,7 +78,7 @@ exports.getMembersByClubId = (clubId) => {
 
 exports.getMemberDetails = (memberIds) => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM Member WHERE id IN (?)`;
+    const query = `SELECT id,name,email,contact_number,meta FROM Member WHERE id IN (?)`;
     db.query(query, [memberIds], (error, results) => {
       if (error) return reject(error);
       resolve(results); // Return the list of members
@@ -88,7 +88,7 @@ exports.getMemberDetails = (memberIds) => {
 
 exports.getActivityTag = (tagId) => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM ActivityTag WHERE id = ?`;
+    const query = `SELECT name FROM ActivityTag WHERE id = ?`;
     db.query(query, [tagId], (error, results) => {
       if (error) return reject(error);
       resolve(results); // Return the list of members

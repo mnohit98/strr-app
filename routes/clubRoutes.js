@@ -2,7 +2,6 @@ const express = require('express');
 const activityController = require("../controllers/activityController.js");
 const router = express.Router();
 const db = require('../config/db.config');
-const validator = require('validator');
 
 /**
  * @swagger
