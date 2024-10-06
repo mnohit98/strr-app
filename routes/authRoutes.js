@@ -7,6 +7,18 @@ const validator = require('validator');
 const sendVerificationEmail = require("../utils/sendMail");
 const router = express.Router();
 
+const generateAccessToken = (id) => {
+    return jwt.sign({userId: id}, process.env.JWT_SECRET, { expiresIn: '1h' });
+};
+
+const generateRefreshToken = (id) => {
+    return jwt.sign({userId: id}, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+};
+
+const verifyToken = (token, secret) => {
+    return jwt.verify(token, secret);
+};
+
 /**
  * @swagger
  * /api/auth/register:
@@ -107,12 +119,10 @@ router.post('/register', async (req, res) => {
                     }
 
                     // Generate a JWT token for email verification (expires in 1 hour)
-                    const token = jwt.sign({ userId: result.insertId, email }, process.env.JWT_SECRET, {
-                        expiresIn: '1h',
-                    });
+                    const token = generateAccessToken(result.insertId);
 
                     // Send email with the verification link
-                    const verificationLink = `${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${token}`;
+                    const verificationLink = `http://${process.env.APP_URL}:${process.env.APP_PORT}/api/auth/verify-email?token=${token}`;
                     sendVerificationEmail(email, verificationLink).then(() => res.status(200).send('Email link sent for verification'));
                 }
             );
@@ -152,7 +162,7 @@ router.get('/verify-email', (req, res) => {
 
     try {
         // Verify the token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded =verifyToken(token, process.env.JWT_SECRET);
         const { userId } = decoded;
 
         // Update the user's verification status in the database
@@ -195,7 +205,20 @@ router.get('/verify-email', (req, res) => {
  *               password: Password123
  *     responses:
  *       200:
- *         description: Successfully logged in
+ *         description: Successfully refreshed tokens.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 access_token:
+ *                   type: string
+ *                   description: The new access token.
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 refresh_token:
+ *                   type: string
+ *                   description: The new refresh token.
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *       400:
  *         description: Invalid credentials
  *       500:
@@ -233,9 +256,113 @@ router.post('/login', (req, res) => {
         }
 
         // Create a JWT token
-        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.status(200).json({ token });
+        const authToken = generateAccessToken(user.id);
+        const newRefreshToken = generateRefreshToken(user.id);
+        await db.promise()
+            .query('UPDATE member SET refresh_token = ?  WHERE id = ?;', [newRefreshToken, user.id]);
+        res.status(200).json({ auth_token: authToken, refresh_token: newRefreshToken });
     });
+});
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh JWT tokens
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refresh_token:
+ *                 type: string
+ *                 description: The refresh token issued during login.
+ *                 example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *               email:
+ *                 type: string
+ *                 description: The email of the user.
+ *                 example: "user@example.com"
+ *     responses:
+ *       200:
+ *         description: Successfully refreshed tokens.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 access_token:
+ *                   type: string
+ *                   description: The new access token.
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *                 refresh_token:
+ *                   type: string
+ *                   description: The new refresh token.
+ *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+ *       400:
+ *         description: Bad request if user ID or refresh token is missing.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User ID and refresh token are required."
+ *       403:
+ *         description: Forbidden if the refresh token is invalid.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid refresh token."
+ *       500:
+ *         description: Internal server error.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error."
+ */
+router.post('/refresh', async (req, res) => {
+    const { refresh_token, email } = req.body;
+    if (!(email || refresh_token)) {
+        return res.status(400).json({ message: 'User ID and refresh token are required.' });
+    }
+
+    try {
+        const sanitizedEmail = validator.normalizeEmail(validator.trim(email).toLowerCase());
+        const [queryResult] = await db.promise()
+            .query('SELECT id, email, refresh_token FROM member WHERE email = ?', [sanitizedEmail]);
+        if(!(queryResult && queryResult.length === 1)) {
+            return res.status(400).json({message: 'No member found'});
+        }
+        let member = queryResult[0];
+        if (!(member && member.refresh_token === refresh_token)) {
+            return res.status(403).json({ message: 'Invalid refresh token.' });
+        }
+        // Verify the refresh token
+        verifyToken(refresh_token, process.env.JWT_REFRESH_SECRET);
+
+        // Generate new access token
+        const accessToken = generateAccessToken(member.id);
+
+        // Optionally, generate a new refresh token
+        const newRefreshToken = generateRefreshToken(member.id);
+        await db.promise()
+            .query('UPDATE member SET refresh_token = ?  WHERE id = ?;', [newRefreshToken, member.id]);
+        res.status(200).json({ access_token: accessToken, refresh_token: newRefreshToken });
+    } catch (error) {
+        return res.status(403).json({ message: 'Invalid refresh token.' });
+    }
 });
 
 /**
@@ -322,10 +449,10 @@ router.post('/resend-verification', (req, res) => {
         }
 
         // Generate a new verification token (JWT) valid for a certain time (e.g., 1 hour)
-        const token = jwt.sign({ id: results[0].id, email: results[0].email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = generateAccessToken(results[0].id);
 
         // Construct a verification link with the new token
-        const verificationLink = `http://localhost:3000/api/auth/verify-email?token=${token}`;
+        const verificationLink = `http://${process.env.APP_URL}:${process.env.APP_PORT}/api/auth/verify-email?token=${token}`;
 
         // Send a new verification email
         sendVerificationEmail(results[0].email, verificationLink)
