@@ -13,7 +13,7 @@ const multerMid = multer({
 
 /**
  * @swagger
- * /api/blob/uploads:
+ * /api/blob/image/uploads:
  *   post:
  *     tags: [BLOB]
  *     summary: Upload an image to blob storage
@@ -44,6 +44,6 @@ const multerMid = multer({
  *       500:
  *         description: Internal server error
  */
-router.post('/uploads', multerMid.single('file'), uploadFile);
+router.post('/image/uploads', multerMid.single('file'), uploadFile);
 
 module.exports = router;
