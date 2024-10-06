@@ -1,12 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const activityController = require('../controllers/activityController.js');
+const activityController = require('../../controllers/activityController.js');
+const db = require('../../config/db.config');
+
+/**
+ * @swagger
+ * tags:
+ *   - name: Activity
+ *     description: API for managing Activity
+ */
 
 /**
  * @swagger
  * /api/activity/{clubId}/upcoming-meetups:
  *   get:
- *     tags: [Meetup]
+ *     tags: [Activity]
  *     summary: Get upcoming meetups by club ID
  *     description: Retrieve a list of upcoming meetups for a specific club by its ID.
  *     security:
@@ -69,187 +77,334 @@ const activityController = require('../controllers/activityController.js');
  *       500:
  *         description: Internal server error
  */
-router.get('/:clubId/upcoming-meetups', activityController.getUpcomingMeetups);
+router.get('/:clubId/upcoming', activityController.getUpcomingMeetups);
 
 /**
  * @swagger
- * /api/activity/{clubId}/info:
+ * /api/activity/{activity_id}/join:
  *   get:
- *     tags: [Club]
- *     summary: Get club information by club ID
- *     description: Retrieve detailed club information, including admins, members, and reputation by the club ID.
+ *     summary: Join an activity by ID
+ *     tags: [Activity]
  *     security:
  *       - BearerAuth: []
  *     parameters:
  *       - in: path
- *         name: clubId
+ *         name: activity_id
  *         required: true
- *         description: The ID of the club to retrieve information for.
+ *         description: The ID of the activity to join.
  *         schema:
- *           type: string
+ *           type: integer
+ *           example: 5
+ *       - in: query
+ *         name: member_id
+ *         required: true
+ *         description: The ID of the member who is joining the activity.
+ *         schema:
+ *           type: integer
+ *           example: 1
  *     responses:
  *       200:
- *         description: Club information
+ *         description: Successfully joined the activity
+ *       400:
+ *         description: Bad request if the activity ID or member ID is missing or invalid
+ *       500:
+ *         description: Error joining the activity
+ */
+router.get('/:activity_id/join', async (req, res) => {
+    const { activity_id } = req.params;
+    const {member_id } = req.body;
+    db.query(`
+        INSERT IGNORE INTO Activity_Member (member_id, activity_id)
+        VALUES (?, ?);
+        `, [member_id, activity_id], async (err) => {
+        if(err) {
+            return res.status(500).send('Error');
+        }
+        return  res.status(200).send('Joined Activity');
+    });
+});
+
+/**
+ * @swagger
+ * /{activity_id}/leave:
+ *   get:
+ *     summary: Leave an activity by ID
+ *     tags: [Activity]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: activity_id
+ *         required: true
+ *         description: The ID of the activity to leave.
+ *         schema:
+ *           type: integer
+ *           example: 5
+ *       - in: query
+ *         name: member_id
+ *         required: true
+ *         description: The ID of the member who is leaving the activity.
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     responses:
+ *       200:
+ *         description: Successfully left the activity
+ *       400:
+ *         description: Bad request if the activity ID or member ID is missing or invalid
+ *       500:
+ *         description: Error leaving the activity
+ */
+router.get('/:activity_id/leave', async (req, res) => {
+    const { activity_id } = req.params;
+    const {member_id } = req.body;
+    db.query(`
+        DELETE FROM Activity_Member
+        WHERE activity_id = ? AND member_id = ?;
+        `, [activity_id, member_id], async (err) => {
+        if(err) {
+            return res.status(500).send('Error');
+        }
+        return  res.status(200).send('Joined Activity');
+    });
+});
+
+/**
+ * @swagger
+ * /create:
+ *   post:
+ *     summary: Create a new activity
+ *     tags: [Activity]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Yoga Class"
+ *               location_id:
+ *                 type: integer
+ *                 example: 1
+ *               club_id:
+ *                 type: integer
+ *                 example: 2
+ *               description:
+ *                 type: string
+ *                 example: "A relaxing yoga class."
+ *               start_datetime:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2024-10-07T10:00:00Z"
+ *               end_datetime:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2024-10-07T12:00:00Z"
+ *               total_seats:
+ *                 type: integer
+ *                 example: 20
+ *               venue:
+ *                 type: string
+ *                 example: "Community Center"
+ *               about:
+ *                 type: string
+ *                 example: "An engaging community yoga experience."
+ *               fee:
+ *                 type: number
+ *                 format: float
+ *                 example: 15.00
+ *               is_paid:
+ *                 type: boolean
+ *                 example: true
+ *               activity_photo_url:
+ *                 type: string
+ *                 example: "http://example.com/photo.jpg"
+ *               venue_url:
+ *                 type: string
+ *                 example: "http://example.com/venue"
+ *               member_id:
+ *                 type: integer
+ *                 example: 3
+ *     responses:
+ *       200:
+ *         description: Successfully created the activity
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 club_id:
- *                   type: string
- *                   description: Club ID
- *                 club_name:
- *                   type: string
- *                   description: Name of the club
- *                 reputation:
+ *                 id:
  *                   type: integer
- *                   description: Reputation score of the club
- *                 admins:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         description: Admin ID
- *                       name:
- *                         type: string
- *                         description: Name of the admin
- *                       email:
- *                         type: string
- *                         description: Email of the admin
- *                       contact_number:
- *                         type: string
- *                         description: Contact number of the admin
- *                 members:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         description: Member ID
- *                       name:
- *                         type: string
- *                         description: Name of the member
- *                       joined_on:
- *                         type: string
- *                         format: date-time
- *                         description: Date the member joined the club
- *                 total_members:
- *                   type: integer
- *                   description: Total number of members in the club
- *                 active_members:
- *                   type: integer
- *                   description: Number of active members who joined in the last month
- *       404:
- *         description: Club not found
+ *                   example: 1
+ *       400:
+ *         description: Bad request if the input data is invalid
  *       500:
- *         description: Internal server error
+ *         description: Error creating the activity
  */
-router.get('/:clubId/info', activityController.getClubInfo);
+router.post('/create', async (req, res) => {
+    let { name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, is_paid, activity_photo_url, venue_url, member_id } = req.body;
+    db.query(`
+        START TRANSTACTION;
+        INSERT INTO activities (
+            name, 
+            location_id, 
+            club_id, 
+            description, 
+            start_datetime, 
+            end_datetime, 
+            total_seats, 
+            venue, 
+            about, 
+            fee, 
+            is_paid, 
+            activity_photo_url, 
+            venue_url
+        ) VALUES (
+            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        );
+        SELECT LAST_INSERT_ID() AS id;
+        COMMIT;
+            `,
+    [name, location_id, activity_tag_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, is_paid, activity_photo_url, venue_url],
+        async (err, result) => {
+            if(err) {
+                return res.status(500).send('Error creating activity');
+            }
+            return res.status(200).send({id: result.id});
+        });
+});
 
 /**
  * @swagger
- * /api/activity/{locationId}/clubs:
- *   get:
- *     tags: [Club]
- *     summary: Get clubs by location ID
- *     description: Retrieve detailed information for clubs, including activity type, activity group, and club reputation by location ID.
+ * /{activity_id}/update:
+ *   post:
+ *     summary: Update an existing activity by ID
+ *     tags: [Activity]
  *     security:
  *       - BearerAuth: []
  *     parameters:
  *       - in: path
- *         name: locationId
+ *         name: activity_id
  *         required: true
- *         description: The ID of the location to retrieve activities for.
+ *         description: The ID of the activity to update.
  *         schema:
- *           type: string
+ *           type: integer
+ *           example: 1
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Updated Yoga Class"
+ *               location_id:
+ *                 type: integer
+ *                 example: 2
+ *               description:
+ *                 type: string
+ *                 example: "An updated description for the yoga class."
+ *               start_datetime:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2024-10-08T10:00:00Z"
+ *               end_datetime:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2024-10-08T12:00:00Z"
+ *               total_seats:
+ *                 type: integer
+ *                 example: 25
+ *               venue:
+ *                 type: string
+ *                 example: "Community Center"
+ *               about:
+ *                 type: string
+ *                 example: "Join us for an updated yoga experience."
+ *               activity_photo_url:
+ *                 type: string
+ *                 example: "http://example.com/updated_photo.jpg"
+ *               venue_url:
+ *                 type: string
+ *                 example: "http://example.com/updated_venue"
  *     responses:
  *       200:
- *         description: Activity information
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 activity_id:
- *                   type: string
- *                   description: Activity ID
- *                 club_name:
- *                   type: string
- *                   description: Name of the club hosting the activity
- *                 reputation:
- *                   type: integer
- *                   description: Reputation score of the club
- *                 activityType:
- *                   type: string
- *                   description: Type of the activity
- *                 activityGroup:
- *                   type: string
- *                   description: Group the activity belongs to (e.g., sporty, cultural, adventure)
- *                 admins:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         description: Admin ID
- *                       name:
- *                         type: string
- *                         description: Name of the admin
- *                       email:
- *                         type: string
- *                         description: Email of the admin
- *                       contact_number:
- *                         type: string
- *                         description: Contact number of the admin
- *                 members:
- *                   type: array
- *                   items:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: string
- *                         description: Member ID
- *                       name:
- *                         type: string
- *                         description: Name of the member
- *                       joined_on:
- *                         type: string
- *                         format: date-time
- *                         description: Date the member joined the club
- *                 total_members:
- *                   type: integer
- *                   description: Total number of members in the club
- *                 active_members:
- *                   type: integer
- *                   description: Number of active members who joined in the last month
- *       404:
- *         description: Activity not found
+ *         description: Successfully updated the activity
+ *       400:
+ *         description: Bad request if the input data is invalid
  *       500:
- *         description: Internal server error
+ *         description: Error updating the activity
  */
-router.get('/:locationId/clubs', activityController.getClubsByLocation);
+router.post('/:activity_id/update', async (req, res) => {
+    const { activity_id } = req.params;
+    let { name, location_id, description, start_datetime, end_datetime, total_seats, venue, about, activity_photo_url, venue_url, member_id } = req.body;
+
+    db.query(`
+    UPDATE Activity
+            SET
+                name = COALESCE(@name, ?),
+                location_id = COALESCE(@location_id, ?),
+                description = COALESCE(@description, ?),
+                start_datetime = COALESCE(@start_datetime, ?),
+                end_datetime = COALESCE(@end_datetime, ?),
+                total_seats = COALESCE(@total_seats, ?),
+                venue = COALESCE(@venue, ?),
+                about = COALESCE(@about, ?),
+                activity_photo_url = COALESCE(@activity_photo_url, ?),
+                venue_url = COALESCE(@venue_url, ?)
+            WHERE id = ?;
+    `,[name, location_id, description, start_datetime, end_datetime, total_seats, venue, about, activity_photo_url, venue_url, activity_id], async (err) => {
+        if(err) {
+            return res.status(500).send('Error updating activity');
+        }
+        return res.status(200).send('Updated');
+    });
+});
 
 /**
  * @swagger
- * /api/activity/tags:
+ * /{activity_id}/cancel:
  *   get:
- *     tags: [Club]
- *     summary: Get all activity tags
+ *     summary: Cancel an activity by ID
+ *     tags: [Activity]
  *     security:
  *       - BearerAuth: []
- *     description: Retrieve tag info.
+ *     parameters:
+ *       - in: path
+ *         name: activity_id
+ *         required: true
+ *         description: The ID of the activity to cancel.
+ *         schema:
+ *           type: integer
+ *           example: 1
  *     responses:
  *       200:
- *         description: Activity information
- *       404:
- *         description: Activity not found
+ *         description: Successfully cancelled the activity
+ *       400:
+ *         description: Bad request if the input data is invalid
  *       500:
- *         description: Internal server error
+ *         description: Error cancelling the activity
  */
-router.get('/tags', activityController.getActivityTags);
+router.get('/:activity_id/cancel', async (req, res) => {
+   const { activity_id }  = req.params;
+   db.query(
+       `
+       UPDATE activity
+        SET is_cancelled = false
+        WHERE activity_id = ?;
+       `
+   [activity_id], (err) => {
+           if(err) {
+               return res.status(500).send('Error cancelling activity');
+           }
+           return res.status(200).send('Cancelled');
+       });
+});
 
 module.exports = router;
