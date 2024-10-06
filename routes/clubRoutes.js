@@ -70,9 +70,31 @@ const validator = require('validator');
  *                       description: The location of the meetup.
  *                       example: "Cricket Ground"
  *                     meetup_timing:
- *                       type: string
- *                       description: The time range for the meetup.
- *                       example: "10:00 AM - 12:00 PM"
+ *                       type: object
+ *                       description: Timing information for the meetup.
+ *                       properties:
+ *                         startTime:
+ *                           type: object
+ *                           properties:
+ *                             hours:
+ *                               type: integer
+ *                               description: Hour of the start time.
+ *                               example: 10
+ *                             minutes:
+ *                               type: integer
+ *                               description: Minutes of the start time.
+ *                               example: 0
+ *                         endTime:
+ *                           type: object
+ *                           properties:
+ *                             hours:
+ *                               type: integer
+ *                               description: Hour of the end time.
+ *                               example: 12
+ *                             minutes:
+ *                               type: integer
+ *                               description: Minutes of the end time.
+ *                               example: 0
  *                     meetup_location_url:
  *                       type: string
  *                       format: uri
@@ -123,7 +145,7 @@ router.post('/create', async (req, res) => {
 
 /**
  * @swagger
- * /api/club/{club_id}/approve-club:
+ * /api/club/{club_id}/approve:
  *   get:
  *     summary: Approve a club by ID
  *     tags: [Club]
@@ -145,7 +167,7 @@ router.post('/create', async (req, res) => {
  *       500:
  *         description: Error approving the club
  */
-router.get('/:club_id/approve-club', async (req, res) => {
+router.get('/:club_id/approve', async (req, res) => {
     let {club_id} = req.params;
     db.query(`UPDATE Club SET is_approved = true, is_active = true WHERE id = ?;`,
         [club_id], async (err) => {
@@ -221,9 +243,31 @@ router.get('/:club_id/approve-club', async (req, res) => {
  *                       description: The location of the meetup.
  *                       example: "Yoga Studio"
  *                     meetup_timing:
- *                       type: string
- *                       description: The time range for the meetup.
- *                       example: "10:00 AM - 12:00 PM"
+ *                       type: object
+ *                       description: Timing information for the meetup.
+ *                       properties:
+ *                         startTime:
+ *                           type: object
+ *                           properties:
+ *                             hours:
+ *                               type: integer
+ *                               description: Hour of the start time.
+ *                               example: 10
+ *                             minutes:
+ *                               type: integer
+ *                               description: Minutes of the start time.
+ *                               example: 0
+ *                         endTime:
+ *                           type: object
+ *                           properties:
+ *                             hours:
+ *                               type: integer
+ *                               description: Hour of the end time.
+ *                               example: 12
+ *                             minutes:
+ *                               type: integer
+ *                               description: Minutes of the end time.
+ *                               example: 0
  *                     meetup_location_url:
  *                       type: string
  *                       format: uri
