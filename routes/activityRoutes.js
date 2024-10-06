@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const activityController = require('../../controllers/activityController.js');
-const db = require('../../config/db.config');
+const activityController = require('../controllers/activityController');
+const db = require('../config/db.config');
 
 /**
  * @swagger
