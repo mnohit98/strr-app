@@ -1,7 +1,7 @@
 const express = require('express');
 const activityController = require("../controllers/activityController.js");
 const router = express.Router();
-const db = require('../../config/db.config');
+const db = require('../config/db.config');
 const validator = require('validator');
 
 /**
@@ -13,7 +13,7 @@ const validator = require('validator');
 
 /**
  * @swagger
- * /api/club/create-club:
+ * /api/club/create:
  *   post:
  *     summary: Create a new club
  *     tags: [Club]
@@ -31,17 +31,53 @@ const validator = require('validator');
  *                 description: The name of the club.
  *                 example: "Yoga Club"
  *               faqs:
- *                 type: string
+ *                 type: array
  *                 description: Frequently asked questions for the club.
- *                 example: "What should I bring?"
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     question:
+ *                       type: string
+ *                       description: The question being asked.
+ *                       example: "What should I bring?"
+ *                     answer:
+ *                       type: string
+ *                       description: The answer to the question.
+ *                       example: "You should bring your own equipment."
  *               activity_tag_id:
  *                 type: integer
  *                 description: The ID of the activity tag associated with the club.
  *                 example: 1
  *               meetup_info:
- *                 type: string
+ *                 type: array
  *                 description: Information about meetups for the club.
- *                 example: "Weekly meetings every Saturday"
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     meetup_dp:
+ *                       type: string
+ *                       format: uri
+ *                       description: URL for the meetup display picture.
+ *                       example: "http://example.com/dp1"
+ *                     meetup_days:
+ *                       type: array
+ *                       items:
+ *                          type: integer
+ *                       description: String representation of the days the meetup occurs (e.g., "[6]" for Saturday).
+ *                       example: [6, 5]
+ *                     meetup_place:
+ *                       type: string
+ *                       description: The location of the meetup.
+ *                       example: "Cricket Ground"
+ *                     meetup_timing:
+ *                       type: string
+ *                       description: The time range for the meetup.
+ *                       example: "10:00 AM - 12:00 PM"
+ *                     meetup_location_url:
+ *                       type: string
+ *                       format: uri
+ *                       description: URL for the meetup location.
+ *                       example: "http://example.com/location1"
  *               about:
  *                 type: string
  *                 description: About the club.
@@ -54,10 +90,6 @@ const validator = require('validator');
  *                 type: string
  *                 description: URL for the club's display picture.
  *                 example: "https://example.com/image.jpg"
- *               member_id:
- *                 type: integer
- *                 description: The ID of the member creating the club.
- *                 example: 5
  *     responses:
  *       200:
  *         description: Successfully created club
@@ -66,8 +98,9 @@ const validator = require('validator');
  *       500:
  *         description: Error creating club
  */
-router.post('/create-club', async (req, res) => {
-    let { name, faqs, activity_tag_id, meetup_info, about, location_id, dp_url, member_id } = req.body;
+router.post('/create', async (req, res) => {
+    let { name, faqs, activity_tag_id, meetup_info, about, location_id, dp_url } = req.body;
+    let member_id = req.member_id;
     db.query(`
             START TRANSACTION;
             INSERT INTO club (name, admin_ids, faqs, dp_url, activity_tag_id, meetup_info, about, location_id)
@@ -77,13 +110,14 @@ router.post('/create-club', async (req, res) => {
             SET meta = JSON_MERGE_PATCH(meta, JSON_OBJECT('admin', JSON_OBJECT('club_ids', JSON_ARRAY(?))))
             WHERE id = @last_inserted_id;
             COMMIT;
+           SELECT @last_inserted_id AS id;
         `,
         [name, [member_id], faqs, dp_url, activity_tag_id, meetup_info, about, location_id, member_id],
-        (err) => {
+        (err, result) => {
             if(err) {
                 return res.status(500).send('Error creating club');
             }
-            return  res.status(200).send('Successfully created club');
+            return  res.status(200).send({id: result.id});
         });
 });
 
@@ -124,7 +158,7 @@ router.get('/:club_id/approve-club', async (req, res) => {
 
 /**
  * @swagger
- * /api/club/{club_id}/update-club:
+ * /api/club/{club_id}/update:
  *   post:
  *     summary: Update a club by ID
  *     tags: [Club]
@@ -150,17 +184,51 @@ router.get('/:club_id/approve-club', async (req, res) => {
  *                 description: The new name of the club.
  *                 example: "Updated Yoga Club"
  *               faqs:
- *                 type: string
+ *                 type: array
  *                 description: Updated frequently asked questions for the club.
- *                 example: "What should I wear?"
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     question:
+ *                       type: string
+ *                       description: The question being asked.
+ *                       example: "What should I wear?"
+ *                     answer:
+ *                       type: string
+ *                       description: The answer to the question.
+ *                       example: "You should wear comfortable clothing."
  *               activity_tag_id:
  *                 type: integer
  *                 description: The new ID of the activity tag associated with the club.
  *                 example: 2
  *               meetup_info:
- *                 type: string
+ *                 type: array
  *                 description: Updated information about meetups for the club.
- *                 example: "Weekly meetings every Sunday"
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     meetup_dp:
+ *                       type: string
+ *                       format: uri
+ *                       description: URL for the meetup display picture.
+ *                       example: "http://example.com/new_dp.jpg"
+ *                     meetup_days:
+ *                       type: string
+ *                       description: String representation of the days the meetup occurs (e.g., "[6]" for Sunday).
+ *                       example: "[6]"
+ *                     meetup_place:
+ *                       type: string
+ *                       description: The location of the meetup.
+ *                       example: "Yoga Studio"
+ *                     meetup_timing:
+ *                       type: string
+ *                       description: The time range for the meetup.
+ *                       example: "10:00 AM - 12:00 PM"
+ *                     meetup_location_url:
+ *                       type: string
+ *                       format: uri
+ *                       description: URL for the meetup location.
+ *                       example: "http://example.com/new_location"
  *               about:
  *                 type: string
  *                 description: Updated about section for the club.
@@ -181,7 +249,7 @@ router.get('/:club_id/approve-club', async (req, res) => {
  *       500:
  *         description: Error updating the club
  */
-router.post('/:club_id/update-club', async (req, res) => {
+router.post('/:club_id/update', async (req, res) => {
     let { name, faqs, activity_tag_id, meetup_info, about, location_id, dp_url } = req.body;
     let { club_id } = req.params;
     db.query(`
@@ -405,6 +473,101 @@ router.get('/:locationId/clubs', activityController.getClubsByLocation);
  *         description: Internal server error
  */
 router.get('/:clubId/info', activityController.getClubInfo);
+
+/**
+ * @swagger
+ * /api/club/{club_id}/join:
+ *   get:
+ *     summary: Join a club
+ *     description: Allows a member to join a specified club by adding them to the Club_Member table and updating the member count in the Club table.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: club_id
+ *         in: path
+ *         required: true
+ *         description: The ID of the club to join.
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Successfully joined the club.
+ *       500:
+ *         description: Error joining the club.
+ *     tags: [Club]
+ */
+router.get('/:club_id/join', async (req, res) => {
+    const { club_id } = req.params;
+    const member_id = req.member_id;
+    try {
+        await db.promise().query(`
+            INSERT INTO Club_Member (member_id, club_id)
+            VALUES (?, ?);
+            
+            UPDATE Club
+            SET m_count = m_count + 1
+            WHERE id = ?;
+        `, [member_id, club_id, club_id]);
+
+        return res.status(200).send('Joined Activity');
+    } catch (err) {
+        return res.status(500).send('Error joining activity');
+    }
+});
+
+/**
+ * @swagger
+ * /api/club/{club_id}/leave:
+ *   get:
+ *     summary: Leave a club
+ *     description: Allows a member to leave a specified club by removing them from the Club_Member table and updating the member count in the Club table.
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - name: club_id
+ *         in: path
+ *         required: true
+ *         description: The ID of the club to leave.
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Successfully left the club.
+ *       404:
+ *         description: Record does not exist (the member is not part of the club).
+ *       500:
+ *         description: Error processing request.
+ *     tags: [Club]
+ */
+router.get('/:club_id/leave', async (req, res) => {
+    const { club_id } = req.params;
+    const member_id = req.member_id;
+    try {
+        // Check if the record exists
+        const [results] = await db.promise().query(`
+            SELECT * FROM Club_Member
+            WHERE club_id = ? AND member_id = ?;
+        `, [club_id, member_id]);
+
+        // If the record does not exist
+        if (results.length === 0) {
+            return res.status(404).send('Record does not exist');
+        }
+
+        // Proceed to delete the record
+        await db.promise().query(`
+            DELETE FROM Club_Member
+            WHERE club_id = ? AND member_id = ?;
+            UPDATE Club
+                SET m_count = m_count - 1
+            WHERE id = ?;
+        `, [club_id, member_id, club_id]);
+
+        return res.status(200).send('Successfully left the club');
+    } catch (err) {
+        return res.status(500).send('Error processing request');
+    }
+});
 
 /**
  * @swagger

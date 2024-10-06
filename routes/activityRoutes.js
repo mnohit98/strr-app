@@ -95,13 +95,6 @@ router.get('/:clubId/upcoming', activityController.getUpcomingMeetups);
  *         schema:
  *           type: integer
  *           example: 5
- *       - in: query
- *         name: member_id
- *         required: true
- *         description: The ID of the member who is joining the activity.
- *         schema:
- *           type: integer
- *           example: 1
  *     responses:
  *       200:
  *         description: Successfully joined the activity
@@ -112,16 +105,22 @@ router.get('/:clubId/upcoming', activityController.getUpcomingMeetups);
  */
 router.get('/:activity_id/join', async (req, res) => {
     const { activity_id } = req.params;
-    const {member_id } = req.body;
-    db.query(`
-        INSERT IGNORE INTO Activity_Member (member_id, activity_id)
-        VALUES (?, ?);
-        `, [member_id, activity_id], async (err) => {
-        if(err) {
-            return res.status(500).send('Error');
-        }
-        return  res.status(200).send('Joined Activity');
-    });
+    const member_id = req.member_id;
+    try {
+        // Execute both the insert and update in a single query
+        await db.promise().query(`
+            INSERT INTO Activity_Member (member_id, activity_id)
+            VALUES (?, ?);
+            
+            UPDATE Activity
+            SET filled_seats = filled_seats + 1
+            WHERE id = ?;
+        `, [member_id, activity_id, activity_id]);
+
+        return res.status(200).send('Joined Activity');
+    } catch (err) {
+        return res.status(500).send('Error joining activity');
+    }
 });
 
 /**
@@ -140,13 +139,6 @@ router.get('/:activity_id/join', async (req, res) => {
  *         schema:
  *           type: integer
  *           example: 5
- *       - in: query
- *         name: member_id
- *         required: true
- *         description: The ID of the member who is leaving the activity.
- *         schema:
- *           type: integer
- *           example: 1
  *     responses:
  *       200:
  *         description: Successfully left the activity
@@ -157,16 +149,32 @@ router.get('/:activity_id/join', async (req, res) => {
  */
 router.get('/:activity_id/leave', async (req, res) => {
     const { activity_id } = req.params;
-    const {member_id } = req.body;
-    db.query(`
-        DELETE FROM Activity_Member
-        WHERE activity_id = ? AND member_id = ?;
-        `, [activity_id, member_id], async (err) => {
-        if(err) {
-            return res.status(500).send('Error');
+    const member_id = req.member_id;
+    try {
+        // Check if the record exists
+        const [results] = await db.promise().query(`
+            SELECT * FROM Activity_Member
+            WHERE activity_id = ? AND member_id = ?;
+        `, [activity_id, member_id]);
+
+        // If the record does not exist
+        if (results.length === 0) {
+            return res.status(404).send('Record does not exist');
         }
-        return  res.status(200).send('Joined Activity');
-    });
+
+        // Proceed to delete the record
+        await db.promise().query(`
+            DELETE FROM Activity_Member
+            WHERE activity_id = ? AND member_id = ?;
+            UPDATE Activity
+                SET filled_seats = filled_seats - 1
+            WHERE id = ?;
+        `, [activity_id, member_id, activity_id]);
+
+        return res.status(200).send('Successfully left the activity');
+    } catch (err) {
+        return res.status(500).send('Error processing request');
+    }
 });
 
 /**
@@ -246,7 +254,7 @@ router.get('/:activity_id/leave', async (req, res) => {
  *         description: Error creating the activity
  */
 router.post('/create', async (req, res) => {
-    let { name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, is_paid, activity_photo_url, venue_url, member_id } = req.body;
+    let { name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, is_paid, activity_photo_url, venue_url } = req.body;
     db.query(`
         START TRANSTACTION;
         INSERT INTO activities (
@@ -343,7 +351,7 @@ router.post('/create', async (req, res) => {
  */
 router.post('/:activity_id/update', async (req, res) => {
     const { activity_id } = req.params;
-    let { name, location_id, description, start_datetime, end_datetime, total_seats, venue, about, activity_photo_url, venue_url, member_id } = req.body;
+    let { name, location_id, description, start_datetime, end_datetime, total_seats, venue, about, activity_photo_url, venue_url } = req.body;
 
     db.query(`
     UPDATE Activity
