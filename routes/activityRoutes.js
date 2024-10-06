@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const activityController = require('../controllers/activityController');
 const db = require('../config/db.config');
-
+const { jsTimestampToMysqlUTC } = require('../utils/common');
 /**
  * @swagger
  * tags:
@@ -125,7 +125,7 @@ router.get('/:activity_id/join', async (req, res) => {
 
 /**
  * @swagger
- * /{activity_id}/leave:
+ * /api/activity/{activity_id}/leave:
  *   get:
  *     summary: Leave an activity by ID
  *     tags: [Activity]
@@ -179,7 +179,7 @@ router.get('/:activity_id/leave', async (req, res) => {
 
 /**
  * @swagger
- * /create:
+ * /api/activity/create:
  *   post:
  *     summary: Create a new activity
  *     tags: [Activity]
@@ -234,9 +234,6 @@ router.get('/:activity_id/leave', async (req, res) => {
  *               venue_url:
  *                 type: string
  *                 example: "http://example.com/venue"
- *               member_id:
- *                 type: integer
- *                 example: 3
  *     responses:
  *       200:
  *         description: Successfully created the activity
@@ -255,40 +252,42 @@ router.get('/:activity_id/leave', async (req, res) => {
  */
 router.post('/create', async (req, res) => {
     let { name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, payment_type, activity_photo_url, venue_url } = req.body;
-    db.query(`
-        START TRANSTACTION;
-        INSERT INTO activities (
-            name, 
-            location_id, 
-            club_id, 
-            description, 
-            start_datetime, 
-            end_datetime, 
-            total_seats, 
-            venue, 
-            about, 
-            fee, 
-            payment_type, 
-            activity_photo_url, 
-            venue_url
-        ) VALUES (
-            ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-        );
-        SELECT LAST_INSERT_ID() AS id;
-        COMMIT;
-            `,
-    [name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, payment_type, activity_photo_url, venue_url],
-        async (err, result) => {
-            if(err) {
-                return res.status(500).send('Error creating activity');
-            }
-            return res.status(200).send({id: result.id});
-        });
+    start_datetime = jsTimestampToMysqlUTC(start_datetime);
+    end_datetime = jsTimestampToMysqlUTC(end_datetime);
+    const connection = db.promise(); // Create a promise connection
+
+    try {
+        const [insertResult] = await connection.query(`
+            INSERT INTO activity (
+                name, 
+                location_id, 
+                club_id, 
+                description, 
+                start_datetime, 
+                end_datetime, 
+                total_seats, 
+                venue, 
+                about, 
+                fee, 
+                payment_type, 
+                activity_photo_url, 
+                venue_url
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        `, [name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, payment_type, activity_photo_url, venue_url]);
+
+        const insertedId = insertResult.insertId;
+
+        return res.status(200).send({ id: insertedId });
+
+    } catch (error) {
+        console.error('Error creating activity:', error);
+        return res.status(500).send('Error creating activity');
+    }
 });
 
 /**
  * @swagger
- * /{activity_id}/update:
+ * /api/activity/{activity_id}/update:
  *   post:
  *     summary: Update an existing activity by ID
  *     tags: [Activity]
@@ -352,7 +351,8 @@ router.post('/create', async (req, res) => {
 router.post('/:activity_id/update', async (req, res) => {
     const { activity_id } = req.params;
     let { name, location_id, description, start_datetime, end_datetime, total_seats, venue, about, activity_photo_url, venue_url } = req.body;
-
+    start_datetime = jsTimestampToMysqlUTC(start_datetime);
+    end_datetime = jsTimestampToMysqlUTC(end_datetime);
     db.query(`
     UPDATE Activity
             SET
@@ -377,7 +377,7 @@ router.post('/:activity_id/update', async (req, res) => {
 
 /**
  * @swagger
- * /{activity_id}/cancel:
+ * /api/activity/{activity_id}/cancel:
  *   get:
  *     summary: Cancel an activity by ID
  *     tags: [Activity]
@@ -400,13 +400,12 @@ router.post('/:activity_id/update', async (req, res) => {
  *         description: Error cancelling the activity
  */
 router.get('/:activity_id/cancel', async (req, res) => {
-   const { activity_id }  = req.params;
+   let { activity_id }  = req.params;
+   activity_id = parseInt(activity_id);
    db.query(
-       `
-       UPDATE activity
-        SET is_cancelled = false
-        WHERE activity_id = ?;
-       `
+       `UPDATE activity
+        SET is_cancelled = 1
+        WHERE id = ?;`,
    [activity_id], (err) => {
            if(err) {
                return res.status(500).send('Error cancelling activity');

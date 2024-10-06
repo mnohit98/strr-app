@@ -61,21 +61,6 @@ exports.getClubsByLocation = async (locationId) => {
       clubs.map(async (club) => {
         const activityTag = await activityRepository.getActivityTagById(club.activity_tag_id);
 
-        const meetupDaysSet = new Set();
-
-        // If meetup_info exists, process it
-        if (club.meetup_info) {
-          const meetupInfoArray = club.meetup_info;
-          
-          // Loop through each meetup info object to gather meetup_days
-          meetupInfoArray.forEach(meetup => {
-            const days = meetup.meetup_days;
-            days.forEach(day => meetupDaysSet.add(day));
-          });
-        }
-
-        // Assign the aggregated unique meetup_days back to the club object
-        club.meetup_days = Array.from(meetupDaysSet);
 
         // Assign activity type and group based on the fetched activity tag
         club.activityType = activityTag ? activityTag.name : null;

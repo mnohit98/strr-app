@@ -122,24 +122,40 @@ const db = require('../config/db.config');
 router.post('/create', async (req, res) => {
     let { name, faqs, activity_tag_id, meetup_info, about, location_id, dp_url } = req.body;
     let member_id = req.member_id;
-    db.query(`
-            START TRANSACTION;
-            INSERT INTO club (name, admin_ids, faqs, dp_url, activity_tag_id, meetup_info, about, location_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-            SET @last_inserted_id = LAST_INSERT_ID();
-            UPDATE member
-            SET meta = JSON_MERGE_PATCH(meta, JSON_OBJECT('admin', JSON_OBJECT('club_ids', JSON_ARRAY(?))))
-            WHERE id = @last_inserted_id;
-            COMMIT;
-           SELECT @last_inserted_id AS id;
-        `,
-        [name, [member_id], faqs, dp_url, activity_tag_id, meetup_info, about, location_id, member_id],
-        (err, result) => {
-            if(err) {
-                return res.status(500).send('Error creating club');
-            }
-            return  res.status(200).send({id: result.id});
-        });
+
+    try {
+        // Start the transaction
+        await db.promise().query('START TRANSACTION');
+
+        // First, insert into the club table
+        const [insertResult] = await db.promise().query(
+            `INSERT INTO club (name, admin_ids, faqs, dp_url, activity_tag_id, meetup_info, about, location_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [name, JSON.stringify([member_id]), JSON.stringify(faqs), dp_url, activity_tag_id, JSON.stringify(meetup_info), about, location_id]
+        );
+
+        const last_inserted_id = insertResult.insertId;
+
+        // Then, update the member table using the inserted club ID
+        await db.promise().query(
+            `UPDATE member
+             SET meta = JSON_MERGE_PATCH(meta, JSON_OBJECT('admin', JSON_OBJECT('club_ids', JSON_ARRAY(?))))
+             WHERE id = ?`,
+            [last_inserted_id, member_id]
+        );
+
+        // Commit the transaction if everything went well
+        await db.promise().query('COMMIT');
+
+        // Return the last inserted club ID
+        return res.status(200).send({ id: last_inserted_id });
+
+    } catch (err) {
+        // Rollback transaction in case of an error
+        await db.promise().query('ROLLBACK');
+        return res.status(500).send('Error processing request');
+    }
+
 });
 
 /**
@@ -152,7 +168,7 @@ router.post('/create', async (req, res) => {
  *       - BearerAuth: []
  *     parameters:
  *       - in: path
- *         name: clubId
+ *         name: club_id
  *         required: true
  *         description: The ID of the club to be approved.
  *         schema:
@@ -308,7 +324,7 @@ router.post('/:club_id/update', async (req, res) => {
             WHERE id = ?;
 
         `,
-        [name, faqs, dp_url, activity_tag_id, meetup_info, about, location_id, is_active, club_id],
+        [name, JSON.stringify(faqs), dp_url, activity_tag_id, JSON.stringify(meetup_info), about, location_id, club_id],
         (err) => {
             if(err) {
                 return res.status(500).send('Error updating club');
@@ -319,7 +335,7 @@ router.post('/:club_id/update', async (req, res) => {
 
 /**
  * @swagger
- * /{club_id}/deactivate:
+ * /api/club/{club_id}/deactivate:
  *   get:
  *     summary: Deactivate a club by ID
  *     tags: [Club]
@@ -346,12 +362,12 @@ router.get('/:club_id/deactivate', async (req, res) => {
    db.query(`
    UPDATE club
    SET is_active = false
-   WHERE club_id = ?;
+   WHERE id = ?;
    `, [club_id], (err) => {
        if(err) {
            return res.status(500).send('Error deactivating club');
        }
-       return res.status(200).send('Cancelled');
+       return res.status(200).send('Deactivated club');
    });
 });
 
@@ -540,21 +556,34 @@ router.get('/:clubId/info', activityController.getClubInfo);
  *     tags: [Club]
  */
 router.get('/:club_id/join', async (req, res) => {
-    const { club_id } = req.params;
+    let { club_id } = req.params;
+    club_id = parseInt(club_id);
     const member_id = req.member_id;
     try {
-        await db.promise().query(`
-            INSERT INTO Club_Member (member_id, club_id)
-            VALUES (?, ?);
-            
-            UPDATE Club
-            SET m_count = m_count + 1
-            WHERE id = ?;
-        `, [member_id, club_id, club_id]);
+        // Start a transaction
+        await db.promise().query('START TRANSACTION');
 
-        return res.status(200).send('Joined Activity');
+        // First query: Insert the member
+        await db.promise().query(`
+      INSERT INTO Club_Member (member_id, club_id)
+      VALUES (?, ?);
+    `, [member_id, club_id]);
+
+        // Second query: Update the club member count
+        await db.promise().query(`
+      UPDATE Club
+      SET m_count = m_count + 1
+      WHERE id = ?;
+    `, [club_id]);
+
+    await db.promise().query('COMMIT');
+
+    return res.status(200).send({ message: "Successfully joined the club" });
+
     } catch (err) {
-        return res.status(500).send('Error joining activity');
+        // Rollback the transaction in case of an error
+        await db.promise().query('ROLLBACK');
+        return res.status(500).send({ error: "Error adding member to club" });
     }
 });
 
@@ -583,7 +612,8 @@ router.get('/:club_id/join', async (req, res) => {
  *     tags: [Club]
  */
 router.get('/:club_id/leave', async (req, res) => {
-    const { club_id } = req.params;
+    let { club_id } = req.params;
+    club_id = parseInt(club_id);
     const member_id = req.member_id;
     try {
         // Check if the record exists

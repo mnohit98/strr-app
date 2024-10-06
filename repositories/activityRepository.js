@@ -18,8 +18,8 @@ exports.findAdminsByAdminIds = (adminIds) => {
         }
 
         const query = `
-            SELECT id, name, email, contact_number, whatsapp_number, reputation
-            FROM Admins
+            SELECT id, name, email, contact_number
+            FROM Member
             WHERE id IN (?)
         `;
 
@@ -58,7 +58,7 @@ exports.findClubById = (clubId) => {
 
 exports.getAdminsByIds = (adminIds) => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM Admins WHERE id IN (?)`;
+    const query = `SELECT * FROM Member WHERE id IN (?)`;
     db.query(query, [adminIds], (error, results) => {
       if (error) return reject(error);
       resolve(results); // Return the list of admins
@@ -78,11 +78,15 @@ exports.getMembersByClubId = (clubId) => {
 
 exports.getMemberDetails = (memberIds) => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT id,name,email,contact_number,meta FROM Member WHERE id IN (?)`;
-    db.query(query, [memberIds], (error, results) => {
-      if (error) return reject(error);
-      resolve(results); // Return the list of members
-    });
+  if(!(memberIds && memberIds.length > 0)) {
+      resolve([]);
+  } else {
+      const query = `SELECT id,name,email,contact_number,meta FROM Member WHERE id IN (?)`;
+      db.query(query, [memberIds], (error, results) => {
+          if (error) return reject(error);
+          resolve(results); // Return the list of members
+      });
+  }
   });
 };
 
