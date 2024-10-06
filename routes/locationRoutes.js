@@ -13,7 +13,7 @@ const locationController = require('../controllers/locationController.js');
  * @swagger
  * /api/location/all:
  *   get:
-  *     tags: [Location] 
+ *     tags: [Location]
  *     summary: Get All locations
  *     security:
  *       - BearerAuth: []
