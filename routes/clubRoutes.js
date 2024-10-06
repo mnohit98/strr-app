@@ -642,6 +642,137 @@ router.get('/:club_id/leave', async (req, res) => {
     }
 });
 
+
+/**
+ * @swagger
+ * /api/club/{club_id}/add-admin:
+ *   post:
+ *     summary: Add a member to the club's admin list if the member is not already present
+ *     tags: [Club]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: club_id
+ *         required: true
+ *         description: The ID of the club to update.
+ *         schema:
+ *           type: integer
+ *           example: 11
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               member_id:
+ *                 type: integer
+ *                 example: 5
+ *     responses:
+ *       200:
+ *         description: Successfully added the member to the club's admin list if not already present
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Success"
+ *       400:
+ *         description: Bad request, missing or invalid parameters
+ *       500:
+ *         description: Server error when updating the club
+ */
+router.post('/:club_id/add-admin', async (req, res) => {
+    const { member_id } = req.body;
+    let { club_id } = req.params;
+    club_id = parseInt(club_id);
+    try {
+        await db.promise().query(`UPDATE club
+            SET admin_ids = JSON_ARRAY_APPEND(admin_ids, '$', ?)
+            WHERE id = ?
+            AND NOT JSON_CONTAINS(admin_ids, CAST(? AS JSON), '$')`, [member_id, club_id, member_id]);
+        return res.status(200).json({'message': 'Success'});
+    } catch (err) {
+        return res.status(500).json({'message': 'Error'});
+    }
+});
+
+/**
+ * @swagger
+ * /api/club/{club_id}/remove-admin:
+ *   post:
+ *     summary: Remove a member from the club's admin list
+ *     tags: [Club]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: club_id
+ *         required: true
+ *         description: The ID of the club from which to remove the admin.
+ *         schema:
+ *           type: integer
+ *           example: 11
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               member_id:
+ *                 type: integer
+ *                 example: 5
+ *     responses:
+ *       200:
+ *         description: Successfully removed the member from the club's admin list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Success"
+ *       400:
+ *         description: Bad request, missing or invalid parameters
+ *       500:
+ *         description: Server error when removing the member from the club
+ */
+router.post('/:club_id/remove-admin', async (req, res) => {
+    const { member_id } = req.body;
+    let { club_id } = req.params;
+    club_id = parseInt(club_id);
+
+
+    try {
+        let [result] = await db.promise().query(
+            `select admin_ids from club where id = ?`, [club_id]
+        );
+        if(!(result && result.length > 0)) {
+            throw new Error();
+        }
+        let admin_ids = result[0].admin_ids;
+        const member_index = admin_ids.indexOf(member_id);
+        if(member_index == -1) {
+            throw new Error('Already removed');
+        } else if(member_index == 0) {
+            throw new Error('Cannot remove');
+        } else {
+            admin_ids = [...admin_ids.slice(0, member_index), ...admin_ids.slice(member_index+1)];
+            await db.promise().query(`
+             update club set admin_ids = ? where id = ?;
+            `, [JSON.stringify(admin_ids), club_id]);
+        }
+        return res.status(200).json({'message': 'Success'});
+    } catch (err) {
+        return res.status(500).json({'message': 'Error'});
+    }
+});
+
 /**
  * @swagger
  * /api/club/activity-tags:

@@ -9,7 +9,7 @@ const connection = mysql.createConnection({
     database: process.env.MYSQL_DATABASE || 'strr_app',
     port: process.env.MYSQL_PORT || '3306',
     multipleStatements: true,
-    decimalStrings: false
+    decimalNumbers: true
 });
 
 connection.connect((err) => {
