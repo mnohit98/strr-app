@@ -37,7 +37,7 @@ CREATE TABLE `Activity` (
   `venue` varchar(255) DEFAULT NULL,
   `about` text,
   `fee` decimal(10,2) DEFAULT 0,
-  `is_paid` tinyint(1) DEFAULT 0,
+  `payment_type` tinyint DEFAULT 0,
   `is_cancelled` tinyint(1) DEFAULT 0,
   `activity_photo_url` varchar(255) DEFAULT NULL,
   `venue_url` varchar(255) DEFAULT NULL,

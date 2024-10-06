@@ -12,7 +12,7 @@ const db = require('../config/db.config');
 
 /**
  * @swagger
- * /api/activity/{clubId}/upcoming-meetups:
+ * /api/activity/{clubId}/upcoming:
  *   get:
  *     tags: [Activity]
  *     summary: Get upcoming meetups by club ID
@@ -225,9 +225,9 @@ router.get('/:activity_id/leave', async (req, res) => {
  *                 type: number
  *                 format: float
  *                 example: 15.00
- *               is_paid:
- *                 type: boolean
- *                 example: true
+ *               payment_type:
+ *                 type: int
+ *                 example: 1
  *               activity_photo_url:
  *                 type: string
  *                 example: "http://example.com/photo.jpg"
@@ -254,7 +254,7 @@ router.get('/:activity_id/leave', async (req, res) => {
  *         description: Error creating the activity
  */
 router.post('/create', async (req, res) => {
-    let { name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, is_paid, activity_photo_url, venue_url } = req.body;
+    let { name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, payment_type, activity_photo_url, venue_url } = req.body;
     db.query(`
         START TRANSTACTION;
         INSERT INTO activities (
@@ -268,7 +268,7 @@ router.post('/create', async (req, res) => {
             venue, 
             about, 
             fee, 
-            is_paid, 
+            payment_type, 
             activity_photo_url, 
             venue_url
         ) VALUES (
@@ -277,7 +277,7 @@ router.post('/create', async (req, res) => {
         SELECT LAST_INSERT_ID() AS id;
         COMMIT;
             `,
-    [name, location_id, activity_tag_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, is_paid, activity_photo_url, venue_url],
+    [name, location_id, club_id, description, start_datetime, end_datetime, total_seats, venue, about, fee, payment_type, activity_photo_url, venue_url],
         async (err, result) => {
             if(err) {
                 return res.status(500).send('Error creating activity');

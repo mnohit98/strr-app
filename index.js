@@ -5,6 +5,7 @@ const activityRoutes = require('./routes/activityRoutes');
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const blobRoutes = require('./routes/blobRoutes');
+const clubRoutes = require('./routes/clubRoutes');
 const {chatRoutes, chatSocket} = require('./routes/chatRoutes');
 const swaggerSetup = require('./swagger');
 const authenticateToken = require('./middleware/authToken'); // Import the auth middleware
@@ -39,6 +40,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use('/api/location', authenticateToken, locationRoutes);
 app.use('/api/activity', authenticateToken, activityRoutes);
+app.use('/api/club', authenticateToken, clubRoutes);
 app.use('/api/user', authenticateToken, userRoutes);
 app.use('/api/chat', authenticateToken, chatRoutes);
 app.use('/api/auth', authRoutes);
