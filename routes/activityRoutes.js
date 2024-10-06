@@ -81,6 +81,150 @@ router.get('/:clubId/upcoming', activityController.getUpcomingMeetups);
 
 /**
  * @swagger
+ * /api/activity/{club_id}/all:
+ *   get:
+ *     summary: Get all activities for a specific club
+ *     tags: [Activity]
+ *     parameters:
+ *       - in: path
+ *         name: club_id
+ *         required: true
+ *         description: The ID of the club to retrieve activities for.
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved all activities for the club
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 results:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                         description: The ID of the activity.
+ *                         example: 1
+ *
+ */
+router.get('/:club_id/all', async (req, res) => {
+    let { club_id } = req.params;
+    club_id = parseInt(club_id);
+    try {
+        const [results] = await db.promise().query(`
+        select * from activity where club_id = ?;
+        `, [club_id]);
+        return res.status(200).send({results});
+    } catch (err) {
+        return res.status(500).send({message: 'Error'});
+    }
+});
+
+/**
+ * @swagger
+ * /api/activity/{activity_id}/info:
+ *   get:
+ *     summary: Get activity information by ID
+ *     tags: [Activity]
+ *     parameters:
+ *       - in: path
+ *         name: activity_id
+ *         required: true
+ *         description: The ID of the activity to retrieve information for.
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     responses:
+ *       200:
+ *         description: Successfully retrieved activity information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: integer
+ *                   description: The ID of the activity.
+ *                   example: 1
+ *                 name:
+ *                   type: string
+ *                   description: The name of the activity.
+ *                   example: "Yoga Class"
+ *                 location_id:
+ *                   type: integer
+ *                   description: The ID of the location associated with the activity.
+ *                   example: 2
+ *                 club_id:
+ *                   type: integer
+ *                   description: The ID of the club associated with the activity.
+ *                   example: 11
+ *                 description:
+ *                   type: string
+ *                   description: A description of the activity.
+ *                   example: "A relaxing yoga class."
+ *                 start_datetime:
+ *                   type: string
+ *                   format: date-time
+ *                   description: The start date and time of the activity.
+ *                   example: "2024-10-07T10:00:00Z"
+ *                 end_datetime:
+ *                   type: string
+ *                   format: date-time
+ *                   description: The end date and time of the activity.
+ *                   example: "2024-10-07T12:00:00Z"
+ *                 total_seats:
+ *                   type: integer
+ *                   description: The total number of seats available for the activity.
+ *                   example: 20
+ *                 venue:
+ *                   type: string
+ *                   description: The venue of the activity.
+ *                   example: "Community Center"
+ *                 about:
+ *                   type: string
+ *                   description: Additional information about the activity.
+ *                   example: "An engaging community yoga experience."
+ *                 fee:
+ *                   type: integer
+ *                   description: The fee for participating in the activity.
+ *                   example: 15
+ *                 payment_type:
+ *                   type: integer
+ *                   description: The type of payment accepted (e.g., cash, online).
+ *                   example: 1
+ *                 activity_photo_url:
+ *                   type: string
+ *                   description: URL for the activity's photo.
+ *                   example: "http://example.com/photo.jpg"
+ *                 venue_url:
+ *                   type: string
+ *                   description: URL for the venue's information.
+ *                   example: "http://example.com/venue"
+ *       404:
+ *         description: Activity not found
+ *       500:
+ *         description: Error retrieving activity information
+ */
+router.get('/:activity_id/info', async (req, res) => {
+    let { activity_id } = req.params;
+    activity_id = parseInt(activity_id);
+    try {
+        const [results] = await db.promise().query(`
+        select * from activity where id = ?;
+        `, [activity_id]);
+        return res.status(200).send({...results[0]});
+    } catch (err) {
+        return res.status(500).send({message: 'Error'});
+    }
+});
+
+/**
+ * @swagger
  * /api/activity/{activity_id}/join:
  *   get:
  *     summary: Join an activity by ID

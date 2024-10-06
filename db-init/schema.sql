@@ -289,7 +289,7 @@ CREATE TABLE `Member` (
   `password` varchar(255) NOT NULL,
   `email_verified` tinyint(1) DEFAULT '0',
   `meta` json DEFAULT NULL,
-   `refresh_token` varchar(255) DEFAULT NULL
+   `refresh_token` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -300,8 +300,8 @@ CREATE TABLE `Member` (
 
 LOCK TABLES `Member` WRITE;
 /*!40000 ALTER TABLE `Member` DISABLE KEYS */;
-INSERT INTO `Member` VALUES (1,'Alice Johnson','alice@example.com','9876543220','$2a$10$m3a41kQS0l9yskcODzaeKOEZkrfXnNUduy7TC/LKcr2gTszcGDQhi',1,'{}'),
-(2,'Bob Lee','bob@example.com','9876543221','$2a$10$m3a41kQS0l9yskcODzaeKOEZkrfXnNUduy7TC/LKcr2gTszcGDQhi',1,'{}');
+INSERT INTO `Member` VALUES (1,'Alice Johnson','alice@example.com','9876543220','$2a$10$m3a41kQS0l9yskcODzaeKOEZkrfXnNUduy7TC/LKcr2gTszcGDQhi',1,'{}',NULL),
+(2,'Bob Lee','bob@example.com','9876543221','$2a$10$m3a41kQS0l9yskcODzaeKOEZkrfXnNUduy7TC/LKcr2gTszcGDQhi',1,'{}',NULL);
 /*!40000 ALTER TABLE `Member` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -37,5 +37,6 @@ exports.getUpcomingMeetupDetails = `
         
     FROM Activity a
     JOIN Club c ON a.club_id = c.id
-    WHERE c.id = ?;
+    WHERE c.id = ?
+    and a.start_datetime > NOW();
 `;
